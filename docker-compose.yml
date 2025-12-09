@@ -16,9 +16,9 @@ services:
     volumes:
       # Config and cache
       - /mnt/app-pool/configs/czkawka/config:/config
-      # Photo library to scan (read-only recommended for safety)
-      - /mnt/media-pool/photos:/photos:ro
-      # Optional: Allow writing to a trash/duplicates folder
+      # Photo library to scan (read-write to allow deletion)
+      - /mnt/media-pool/photos:/photos
+      # Duplicates staging folder
       - /mnt/media-pool/photos-duplicates:/duplicates
     networks:
       - czkawka
