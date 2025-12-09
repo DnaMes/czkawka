@@ -18,6 +18,8 @@ services:
       - /mnt/app-pool/configs/czkawka/config:/config
       # Photo library to scan (read-write to allow deletion)
       - /mnt/media-pool/photos:/photos
+      # Video library to scan (read-write to allow deletion)
+      - /mnt/media-pool/videos:/videos
       # Duplicates staging folder
       - /mnt/media-pool/photos-duplicates:/duplicates
     networks:
