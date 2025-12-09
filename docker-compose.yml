@@ -1,0 +1,47 @@
+name: czkawka
+
+services:
+  czkawka:
+    image: jlesage/czkawka:latest
+    container_name: czkawka
+    restart: unless-stopped
+    ports:
+      - 5800:5800  # Web GUI
+    environment:
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - TZ=Europe/Berlin
+      - KEEP_APP_RUNNING=1
+      - DISPLAY_WIDTH=1920
+      - DISPLAY_HEIGHT=1080
+      - VNC_PASSWORD=  # Set via .env file
+    volumes:
+      # Config and cache
+      - /mnt/app-pool/configs/czkawka/config:/config
+      # Photo library to scan (read-only recommended for safety)
+      - /mnt/media-pool/photos:/photos:ro
+      # Optional: Allow writing to a trash/duplicates folder
+      - /mnt/media-pool/photos-duplicates:/duplicates
+    networks:
+      - czkawka
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.czkawka.rule=Host(`czkawka.media.erdlabs.com`)"
+      - "traefik.http.routers.czkawka.entrypoints=https"
+      - "traefik.http.routers.czkawka.tls=true"
+      - "traefik.http.services.czkawka.loadbalancer.server.port=5800"
+      - "traefik.docker.network=proxy"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5800"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  czkawka:
+    name: czkawka
+    driver: bridge
+  proxy:
+    external: true

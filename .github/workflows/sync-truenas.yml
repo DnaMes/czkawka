@@ -1,0 +1,50 @@
+name: Sync Czkawka to TrueNAS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'setup.sh'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:github-actions
+        
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.TRUENAS_SSH_KEY }}
+          
+      - name: Add TrueNAS to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 100.112.169.124 >> ~/.ssh/known_hosts
+          
+      - name: Sync Configuration
+        run: |
+          rsync -avz --exclude '.git' --exclude '.github' \
+            --exclude 'config' \
+            ./ root@100.112.169.124:/mnt/app-pool/configs/czkawka/
+            
+      - name: Restart Czkawka
+        run: |
+          ssh root@100.112.169.124 'cd /mnt/app-pool/configs/czkawka && docker compose restart czkawka'
+          
+      - name: Verify Health
+        run: |
+          sleep 15
+          ssh root@100.112.169.124 'docker inspect czkawka | jq -e ".[] | select(.State.Health.Status == \"healthy\")" || docker logs czkawka | tail -20'
